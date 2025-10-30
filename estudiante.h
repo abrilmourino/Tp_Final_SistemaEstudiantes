@@ -3,21 +3,30 @@
 
 #define MAX_NOMBRE 50
 
-typedef struct {
+typedef struct
+{
     int materiaId;
-    int nota;  // -1 si no rindió
+    int nota; // -1 si no rindió
 } InscripcionMateria;
 
-typedef struct {
-    int id;                      // Identificador único del estudiante
-    char nombre[MAX_NOMBRE];     // Nombre del estudiante
-    int edad;                    // Edad del estudiante
+typedef struct
+{
+    int id;                  // Identificador único del estudiante
+    char nombre[MAX_NOMBRE]; // Nombre del estudiante
+    int edad;                // Edad del estudiante
+    char apellido[50];
     InscripcionMateria *materias; // Array dinámico de materias inscritas con sus notas
-    int cantMaterias;            // Cantidad de materias en las que está inscrito
+    int cantMaterias;             // Cantidad de materias en las que está inscrito
 } Estudiante;
 
+typedef struct
+{
+    Estudiante *estudiantes;
+    int cantidadEstudiantes;
+} Sistema;
+
 // Prototipos de funciones relacionadas con estudiantes
-Estudiante* crearEstudiante(int id, const char *nombre, int edad);
+Estudiante *crearEstudiante(int id, const char *nombre, int edad);
 void modificarEstudiante(Estudiante *e, const char *nuevoNombre, int nuevaEdad);
 void mostrarEstudiante(const Estudiante *e);
 void liberarEstudiante(Estudiante *e);

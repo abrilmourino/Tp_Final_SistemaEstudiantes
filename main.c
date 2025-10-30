@@ -3,16 +3,19 @@
 #include "sistema.h"
 #include "utils.h"
 
-int main() {
+int main()
+{
     Sistema *sistema = crearSistema();
-    if (!sistema) {
+    if (!sistema)
+    {
         printf("Error fatal: No se pudo inicializar el sistema.\n");
         return 1;
     }
-    
+
     int opcion;
 
-    do {
+    do
+    {
         printf("\n==== MENU PRINCIPAL ====\n");
         printf("1. Alta estudiante\n");
         printf("2. Baja estudiante\n");
@@ -25,25 +28,63 @@ int main() {
         printf("9. Inscribir estudiante en materia\n");
         printf("10. Rendir materia\n");
         printf("11. Ver notas de estudiante\n");
+        printf("12. Buscar estudiante por nombre\n");
+        printf("13. Buscar estudiante por apellido\n");
+        printf("14. Listar estudiantes por rango de edad\n");
         printf("0. Salir\n");
         printf("Seleccione una opción: ");
         scanf("%d", &opcion);
         limpiarBuffer();
 
-        switch (opcion) {
-            case 1: altaEstudiante(sistema); break;
-            case 2: bajaEstudiante(sistema); break;
-            case 3: modificarEstudianteSistema(sistema); break;
-            case 4: listarEstudiantes(sistema); break;
-            case 5: altaMateria(sistema); break;
-            case 6: bajaMateria(sistema); break;
-            case 7: modificarMateriaSistema(sistema); break;
-            case 8: listarMaterias(sistema); break;
-            case 9: inscribirEnMateria(sistema); break;
-            case 10: rendirMateria(sistema); break;
-            case 11: verNotasEstudiante(sistema); break;
-            case 0: printf("Saliendo...\n"); break;
-            default: printf("Opción inválida.\n");
+        switch (opcion)
+        {
+        case 1:
+            altaEstudiante(sistema);
+            break;
+        case 2:
+            bajaEstudiante(sistema);
+            break;
+        case 3:
+            modificarEstudianteSistema(sistema);
+            break;
+        case 4:
+            listarEstudiantes(sistema);
+            break;
+        case 5:
+            altaMateria(sistema);
+            break;
+        case 6:
+            bajaMateria(sistema);
+            break;
+        case 7:
+            modificarMateriaSistema(sistema);
+            break;
+        case 8:
+            listarMaterias(sistema);
+            break;
+        case 9:
+            inscribirEnMateria(sistema);
+            break;
+        case 10:
+            rendirMateria(sistema);
+            break;
+        case 11:
+            verNotasEstudiante(sistema);
+            break;
+        case 12:
+            buscarEstudiantePorNombre(sistema);
+            break;
+        case 13:
+            buscarEstudiantePorApellido(sistema);
+            break;
+        case 14:
+            listarEstudiantesPorRangoEdad(sistema);
+            break;
+        case 0:
+            printf("Saliendo...\n");
+            break;
+        default:
+            printf("Opción inválida.\n");
         }
 
     } while (opcion != 0);

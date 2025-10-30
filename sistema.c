@@ -1,312 +1,347 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 #include "sistema.h"
 #include "utils.h"
 
-Sistema* crearSistema() {
-    Sistema *s = (Sistema*) malloc(sizeof(Sistema));
-    if (!s) {
-        printf("Error: No se pudo crear el sistema.\n");
-        return NULL;
-    }
-    
-    s->cantEstudiantes = 0;
-    s->capEstudiantes = 10;
-    s->estudiantes = malloc(sizeof(Estudiante*) * s->capEstudiantes);
-    if (!s->estudiantes) {
-        printf("Error: No se pudo asignar memoria para estudiantes.\n");
-        free(s);
-        return NULL;
-    }
+// =======================================================
+// Función auxiliar: comparar cadenas sin distinguir mayúsculas
+// =======================================================
+int contieneCadenaIgnorandoMayusculas(const char *texto, const char *subcadena)
+{
+    if (!texto || !subcadena)
+        return 0;
 
-    s->cantMaterias = 0;
-    s->capMaterias = 10;
-    s->materias = malloc(sizeof(Materia*) * s->capMaterias);
-    if (!s->materias) {
-        printf("Error: No se pudo asignar memoria para materias.\n");
-        free(s->estudiantes);
-        free(s);
-        return NULL;
-    }
+    char textoMin[100];
+    char subMin[100];
+    int i;
 
+    for (i = 0; texto[i] && i < 99; i++)
+        textoMin[i] = tolower((unsigned char)texto[i]);
+    textoMin[i] = '\0';
+
+    for (i = 0; subcadena[i] && i < 99; i++)
+        subMin[i] = tolower((unsigned char)subcadena[i]);
+    subMin[i] = '\0';
+
+    return strstr(textoMin, subMin) != NULL;
+}
+
+// =======================================================
+// FUNCIONES DE ARCHIVO
+// =======================================================
+void guardarEstudiantes(Sistema *sistema)
+{
+    if (!sistema)
+        return;
+    FILE *f = fopen("estudiantes.dat", "wb");
+    if (!f)
+    {
+        printf("⚠️ No se pudo guardar el archivo de estudiantes.\n");
+        return;
+    }
+    fwrite(&sistema->cantidadEstudiantes, sizeof(int), 1, f);
+    fwrite(sistema->estudiantes, sizeof(Estudiante), sistema->cantidadEstudiantes, f);
+    fclose(f);
+    // printf("💾 Estudiantes guardados correctamente.\n");
+}
+
+void cargarEstudiantes(Sistema *sistema)
+{
+    if (!sistema)
+        return;
+    FILE *f = fopen("estudiantes.dat", "rb");
+    if (!f)
+    {
+        sistema->estudiantes = NULL;
+        sistema->cantidadEstudiantes = 0;
+        return;
+    }
+    fread(&sistema->cantidadEstudiantes, sizeof(int), 1, f);
+    if (sistema->cantidadEstudiantes > 0)
+    {
+        sistema->estudiantes = malloc(sistema->cantidadEstudiantes * sizeof(Estudiante));
+        fread(sistema->estudiantes, sizeof(Estudiante), sistema->cantidadEstudiantes, f);
+    }
+    else
+    {
+        sistema->estudiantes = NULL;
+    }
+    fclose(f);
+    printf("✅ Se cargaron %d estudiantes desde archivo.\n", sistema->cantidadEstudiantes);
+}
+
+// =======================================================
+// CREAR Y LIBERAR SISTEMA
+// =======================================================
+Sistema *crearSistema()
+{
+    Sistema *s = malloc(sizeof(Sistema));
+    if (!s)
+        return NULL;
+
+    s->cantidadEstudiantes = 0;
+    s->cantidadMaterias = 0;
+    s->estudiantes = NULL;
+    s->materias = NULL;
+
+    // Cargar datos desde archivo
+    cargarEstudiantes(s);
     return s;
 }
 
-void liberarSistema(Sistema *s) {
-    for (int i = 0; i < s->cantEstudiantes; i++)
-        liberarEstudiante(s->estudiantes[i]);
-    for (int i = 0; i < s->cantMaterias; i++)
-        liberarMateria(s->materias[i]);
-
-    free(s->estudiantes);
-    free(s->materias);
-    free(s);
+void liberarSistema(Sistema *sistema)
+{
+    if (!sistema)
+        return;
+    guardarEstudiantes(sistema); // Guardar automáticamente
+    free(sistema->estudiantes);
+    free(sistema->materias);
+    free(sistema);
+    printf("💾 Sistema guardado y liberado correctamente.\n");
 }
 
-// ===== CRUD ESTUDIANTES =====
-void altaEstudiante(Sistema *s) {
-    if (s->cantEstudiantes == s->capEstudiantes) {
-        s->capEstudiantes *= 2;
-        s->estudiantes = realloc(s->estudiantes, sizeof(Estudiante*) * s->capEstudiantes);
-        if (!s->estudiantes) {
-            printf("Error: No se pudo asignar memoria.\n");
-            return;
-        }
-    }
+// =======================================================
+// GESTIÓN DE ESTUDIANTES
+// =======================================================
+void altaEstudiante(Sistema *sistema)
+{
+    if (!sistema)
+        return;
 
-    int id = s->cantEstudiantes + 1;
-    char nombre[50];
-    int edad;
+    Estudiante nuevo;
+    printf("Ingrese ID del estudiante: ");
+    scanf("%d", &nuevo.id);
+    limpiarBuffer();
 
-    // Validar nombre
-    do {
-        printf("Ingrese nombre: ");
-        leerCadena(nombre, 50);
-        if (!validarCadenaNoVacia(nombre)) {
-            printf("Error: El nombre no puede estar vacío.\n");
-        }
-    } while (!validarCadenaNoVacia(nombre));
+    printf("Ingrese nombre: ");
+    fgets(nuevo.nombre, sizeof(nuevo.nombre), stdin);
+    nuevo.nombre[strcspn(nuevo.nombre, "\n")] = '\0';
 
-    // Validar edad
-    edad = leerEnteroPositivo("Ingrese edad: ");
+    printf("Ingrese apellido: ");
+    fgets(nuevo.apellido, sizeof(nuevo.apellido), stdin);
+    nuevo.apellido[strcspn(nuevo.apellido, "\n")] = '\0';
 
-    s->estudiantes[s->cantEstudiantes++] = crearEstudiante(id, nombre, edad);
-    printf("Estudiante agregado correctamente.\n");
+    printf("Ingrese edad: ");
+    scanf("%d", &nuevo.edad);
+    limpiarBuffer();
+
+    sistema->cantidadEstudiantes++;
+    sistema->estudiantes = realloc(sistema->estudiantes, sistema->cantidadEstudiantes * sizeof(Estudiante));
+    sistema->estudiantes[sistema->cantidadEstudiantes - 1] = nuevo;
+
+    guardarEstudiantes(sistema); // Guardar inmediatamente
+    printf("✅ Estudiante agregado correctamente.\n");
 }
 
-void listarEstudiantes(const Sistema *s) {
-    if (s->cantEstudiantes == 0) {
+void listarEstudiantes(Sistema *sistema)
+{
+    if (!sistema || sistema->cantidadEstudiantes == 0)
+    {
         printf("No hay estudiantes registrados.\n");
         return;
     }
 
-    printf("\n--- LISTADO DE ESTUDIANTES ---\n");
-    for (int i = 0; i < s->cantEstudiantes; i++)
-        mostrarEstudiante(s->estudiantes[i]);
+    printf("\n=== LISTA DE ESTUDIANTES ===\n");
+    for (int i = 0; i < sistema->cantidadEstudiantes; i++)
+    {
+        Estudiante e = sistema->estudiantes[i];
+        printf("ID: %d | %s %s | Edad: %d\n", e.id, e.nombre, e.apellido, e.edad);
+    }
 }
 
-void bajaEstudiante(Sistema *s) {
+void bajaEstudiante(Sistema *sistema)
+{
+    if (!sistema || sistema->cantidadEstudiantes == 0)
+    {
+        printf("No hay estudiantes para eliminar.\n");
+        return;
+    }
+
     int id;
     printf("Ingrese ID del estudiante a eliminar: ");
     scanf("%d", &id);
     limpiarBuffer();
 
-    for (int i = 0; i < s->cantEstudiantes; i++) {
-        if (s->estudiantes[i]->id == id) {
-            liberarEstudiante(s->estudiantes[i]);
-            for (int j = i; j < s->cantEstudiantes - 1; j++)
-                s->estudiantes[j] = s->estudiantes[j + 1];
-            s->cantEstudiantes--;
-            printf("Estudiante eliminado.\n");
-            return;
+    int pos = -1;
+    for (int i = 0; i < sistema->cantidadEstudiantes; i++)
+    {
+        if (sistema->estudiantes[i].id == id)
+        {
+            pos = i;
+            break;
         }
     }
-    printf("No se encontró el estudiante.\n");
+
+    if (pos == -1)
+    {
+        printf("No se encontró estudiante con ese ID.\n");
+        return;
+    }
+
+    for (int i = pos; i < sistema->cantidadEstudiantes - 1; i++)
+    {
+        sistema->estudiantes[i] = sistema->estudiantes[i + 1];
+    }
+
+    sistema->cantidadEstudiantes--;
+    sistema->estudiantes = realloc(sistema->estudiantes, sistema->cantidadEstudiantes * sizeof(Estudiante));
+
+    guardarEstudiantes(sistema);
+    printf("✅ Estudiante eliminado correctamente.\n");
 }
 
-void modificarEstudianteSistema(Sistema *s) {
+void modificarEstudianteSistema(Sistema *sistema)
+{
+    if (!sistema || sistema->cantidadEstudiantes == 0)
+    {
+        printf("No hay estudiantes para modificar.\n");
+        return;
+    }
+
     int id;
     printf("Ingrese ID del estudiante a modificar: ");
     scanf("%d", &id);
     limpiarBuffer();
 
-    for (int i = 0; i < s->cantEstudiantes; i++) {
-        if (s->estudiantes[i]->id == id) {
-            char nombre[50];
-            int edad;
-            printf("Nuevo nombre: ");
-            leerCadena(nombre, 50);
-            printf("Nueva edad: ");
-            scanf("%d", &edad);
+    for (int i = 0; i < sistema->cantidadEstudiantes; i++)
+    {
+        if (sistema->estudiantes[i].id == id)
+        {
+            printf("Modificar nombre (%s): ", sistema->estudiantes[i].nombre);
+            fgets(sistema->estudiantes[i].nombre, 50, stdin);
+            sistema->estudiantes[i].nombre[strcspn(sistema->estudiantes[i].nombre, "\n")] = '\0';
+
+            printf("Modificar apellido (%s): ", sistema->estudiantes[i].apellido);
+            fgets(sistema->estudiantes[i].apellido, 50, stdin);
+            sistema->estudiantes[i].apellido[strcspn(sistema->estudiantes[i].apellido, "\n")] = '\0';
+
+            printf("Modificar edad (%d): ", sistema->estudiantes[i].edad);
+            scanf("%d", &sistema->estudiantes[i].edad);
             limpiarBuffer();
 
-            modificarEstudiante(s->estudiantes[i], nombre, edad);
-            printf("Estudiante modificado.\n");
+            guardarEstudiantes(sistema);
+            printf("✅ Estudiante modificado correctamente.\n");
             return;
         }
     }
-    printf("No se encontró el estudiante.\n");
+
+    printf("No se encontró estudiante con ese ID.\n");
 }
 
-// ===== CRUD MATERIAS =====
-void altaMateria(Sistema *s) {
-    if (s->cantMaterias == s->capMaterias) {
-        s->capMaterias *= 2;
-        s->materias = realloc(s->materias, sizeof(Materia*) * s->capMaterias);
-        if (!s->materias) {
-            printf("Error: No se pudo asignar memoria.\n");
-            return;
-        }
+// =======================================================
+// FUNCIONES DE BÚSQUEDA Y FILTRO
+// =======================================================
+void buscarEstudiantePorNombre(Sistema *sistema)
+{
+    if (!sistema || sistema->cantidadEstudiantes == 0)
+    {
+        printf("No hay estudiantes registrados.\n");
+        return;
     }
 
-    int id = s->cantMaterias + 1;
     char nombre[50];
-    
-    // Validar nombre de materia
-    do {
-        printf("Ingrese nombre de materia: ");
-        leerCadena(nombre, 50);
-        if (!validarCadenaNoVacia(nombre)) {
-            printf("Error: El nombre de la materia no puede estar vacío.\n");
-        }
-    } while (!validarCadenaNoVacia(nombre));
+    printf("Ingrese el nombre a buscar: ");
+    fgets(nombre, sizeof(nombre), stdin);
+    nombre[strcspn(nombre, "\n")] = '\0';
 
-    s->materias[s->cantMaterias++] = crearMateria(id, nombre);
-    printf("Materia agregada correctamente.\n");
+    int encontrados = 0;
+    for (int i = 0; i < sistema->cantidadEstudiantes; i++)
+    {
+        if (contieneCadenaIgnorandoMayusculas(sistema->estudiantes[i].nombre, nombre))
+        {
+            printf("ID: %d | %s %s | Edad: %d\n",
+                   sistema->estudiantes[i].id,
+                   sistema->estudiantes[i].nombre,
+                   sistema->estudiantes[i].apellido,
+                   sistema->estudiantes[i].edad);
+            encontrados++;
+        }
+    }
+
+    if (!encontrados)
+        printf("No se encontraron estudiantes con ese nombre.\n");
 }
 
-void listarMaterias(const Sistema *s) {
-    if (s->cantMaterias == 0) {
-        printf("No hay materias registradas.\n");
+void buscarEstudiantePorApellido(Sistema *sistema)
+{
+    if (!sistema || sistema->cantidadEstudiantes == 0)
+    {
+        printf("No hay estudiantes registrados.\n");
         return;
     }
 
-    printf("\n--- LISTADO DE MATERIAS ---\n");
-    for (int i = 0; i < s->cantMaterias; i++)
-        mostrarMateria(s->materias[i]);
+    char apellido[50];
+    printf("Ingrese el apellido a buscar: ");
+    fgets(apellido, sizeof(apellido), stdin);
+    apellido[strcspn(apellido, "\n")] = '\0';
+
+    int encontrados = 0;
+    for (int i = 0; i < sistema->cantidadEstudiantes; i++)
+    {
+        if (contieneCadenaIgnorandoMayusculas(sistema->estudiantes[i].apellido, apellido))
+        {
+            printf("ID: %d | %s %s | Edad: %d\n",
+                   sistema->estudiantes[i].id,
+                   sistema->estudiantes[i].nombre,
+                   sistema->estudiantes[i].apellido,
+                   sistema->estudiantes[i].edad);
+            encontrados++;
+        }
+    }
+
+    if (!encontrados)
+        printf("No se encontraron estudiantes con ese apellido.\n");
 }
 
-void bajaMateria(Sistema *s) {
-    int id;
-    printf("Ingrese ID de la materia a eliminar: ");
-    scanf("%d", &id);
+void listarEstudiantesPorRangoEdad(Sistema *sistema)
+{
+    if (!sistema || sistema->cantidadEstudiantes == 0)
+    {
+        printf("No hay estudiantes registrados.\n");
+        return;
+    }
+
+    int min, max;
+    printf("Ingrese edad mínima: ");
+    scanf("%d", &min);
+    printf("Ingrese edad máxima: ");
+    scanf("%d", &max);
     limpiarBuffer();
 
-    for (int i = 0; i < s->cantMaterias; i++) {
-        if (s->materias[i]->id == id) {
-            liberarMateria(s->materias[i]);
-            for (int j = i; j < s->cantMaterias - 1; j++)
-                s->materias[j] = s->materias[j + 1];
-            s->cantMaterias--;
-            printf("Materia eliminada.\n");
-            return;
-        }
-    }
-    printf("No se encontró la materia.\n");
-}
-
-void modificarMateriaSistema(Sistema *s) {
-    int id;
-    printf("Ingrese ID de la materia a modificar: ");
-    scanf("%d", &id);
-    limpiarBuffer();
-
-    for (int i = 0; i < s->cantMaterias; i++) {
-        if (s->materias[i]->id == id) {
-            char nombre[50];
-            printf("Nuevo nombre de la materia: ");
-            leerCadena(nombre, 50);
-
-            modificarMateria(s->materias[i], nombre);
-            printf("Materia modificada correctamente.\n");
-            return;
-        }
-    }
-    printf("No se encontró la materia.\n");
-}
-
-// ===== RELACIONES =====
-void inscribirEnMateria(Sistema *s) {
-    int idEst, idMat;
-    printf("ID estudiante: ");
-    scanf("%d", &idEst);
-    printf("ID materia: ");
-    scanf("%d", &idMat);
-    limpiarBuffer();
-
-    if (idEst <= 0 || idEst > s->cantEstudiantes || idMat <= 0 || idMat > s->cantMaterias) {
-        printf("ID inválido.\n");
+    if (min > max)
+    {
+        printf("Error: la edad mínima no puede ser mayor que la máxima.\n");
         return;
     }
 
-    Estudiante *e = s->estudiantes[idEst - 1];
-    
-    // Verificar si ya está inscrito
-    for (int i = 0; i < e->cantMaterias; i++) {
-        if (e->materias[i].materiaId == idMat) {
-            printf("El estudiante ya está inscrito en esta materia.\n");
-            return;
+    int encontrados = 0;
+    for (int i = 0; i < sistema->cantidadEstudiantes; i++)
+    {
+        int edad = sistema->estudiantes[i].edad;
+        if (edad >= min && edad <= max)
+        {
+            printf("ID: %d | %s %s | Edad: %d\n",
+                   sistema->estudiantes[i].id,
+                   sistema->estudiantes[i].nombre,
+                   sistema->estudiantes[i].apellido,
+                   edad);
+            encontrados++;
         }
     }
 
-    InscripcionMateria *temp = realloc(e->materias, sizeof(InscripcionMateria) * (e->cantMaterias + 1));
-    if (!temp) {
-        printf("Error: No se pudo asignar memoria para la inscripción.\n");
-        return;
-    }
-    e->materias = temp;
-    e->materias[e->cantMaterias].materiaId = idMat;
-    e->materias[e->cantMaterias].nota = -1; // No rindió aún
-    e->cantMaterias++;
-
-    printf("Estudiante %s inscrito en materia %s.\n",
-           e->nombre, s->materias[idMat - 1]->nombre);
+    if (!encontrados)
+        printf("No se encontraron estudiantes en ese rango de edad.\n");
 }
 
-void rendirMateria(Sistema *s) {
-    int idEst, idMat;
-    printf("ID estudiante: ");
-    scanf("%d", &idEst);
-    printf("ID materia: ");
-    scanf("%d", &idMat);
-    limpiarBuffer();
-
-    if (idEst <= 0 || idEst > s->cantEstudiantes || idMat <= 0 || idMat > s->cantMaterias) {
-        printf("ID inválido.\n");
-        return;
-    }
-
-    Estudiante *e = s->estudiantes[idEst - 1];
-    
-    // Buscar la materia en las inscripciones del estudiante
-    for (int i = 0; i < e->cantMaterias; i++) {
-        if (e->materias[i].materiaId == idMat) {
-            int nota;
-            printf("Ingrese nota (0-10): ");
-            scanf("%d", &nota);
-            limpiarBuffer();
-            
-            if (nota < 0 || nota > 10) {
-                printf("Nota inválida. Debe ser entre 0 y 10.\n");
-                return;
-            }
-            
-            e->materias[i].nota = nota;
-            printf("Estudiante %s - Materia %s: nota %d registrada.\n",
-                   e->nombre, s->materias[idMat - 1]->nombre, nota);
-            return;
-        }
-    }
-    printf("El estudiante no está inscrito en esta materia.\n");
-}
-
-void verNotasEstudiante(Sistema *s) {
-    int idEst;
-    printf("Ingrese ID del estudiante: ");
-    scanf("%d", &idEst);
-    limpiarBuffer();
-
-    if (idEst <= 0 || idEst > s->cantEstudiantes) {
-        printf("ID de estudiante inválido.\n");
-        return;
-    }
-
-    Estudiante *e = s->estudiantes[idEst - 1];
-    printf("\n--- NOTAS DE %s ---\n", e->nombre);
-    
-    if (e->cantMaterias == 0) {
-        printf("No está inscrito en ninguna materia.\n");
-        return;
-    }
-
-    for (int i = 0; i < e->cantMaterias; i++) {
-        int idMat = e->materias[i].materiaId;
-        printf("Materia: %s - ", s->materias[idMat - 1]->nombre);
-        if (e->materias[i].nota == -1) {
-            printf("Sin rendir\n");
-        } else {
-            printf("Nota: %d\n", e->materias[i].nota);
-        }
-    }
-}
+// =======================================================
+// MATERIAS (aún sin implementar)
+// =======================================================
+/*void altaMateria(Sistema *sistema) { printf("(Función altaMateria sin implementar)\n"); }
+void bajaMateria(Sistema *sistema) { printf("(Función bajaMateria sin implementar)\n"); }
+void modificarMateriaSistema(Sistema *sistema) { printf("(Función modificarMateria sin implementar)\n"); }
+void listarMaterias(Sistema *sistema) { printf("(Función listarMaterias sin implementar)\n"); }
+void inscribirEnMateria(Sistema *sistema) { printf("(Función inscribirEnMateria sin implementar)\n"); }
+void rendirMateria(Sistema *sistema) { printf("(Función rendirMateria sin implementar)\n"); }
+void verNotasEstudiante(Sistema *sistema) { printf("(Función verNotasEstudiante sin implementar)\n"); }*/

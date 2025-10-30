@@ -1,17 +1,36 @@
-#ifndef MATERIA_H
-#define MATERIA_H
+#ifndef MATERIAS_H
+#define MATERIAS_H
 
-#define MAX_NOMBRE_MATERIA 50
+// Tamaño máximo para el nombre de la materia
+#define MAX_NOMBRE 100
 
-typedef struct {
-    int id;                      // Identificador único de la materia
-    char nombre[MAX_NOMBRE_MATERIA];  // Nombre de la materia
+// Estructura Materia
+typedef struct
+{
+    int id;
+    char nombre[MAX_NOMBRE];
 } Materia;
 
-// Prototipos
-Materia* crearMateria(int id, const char *nombre);
-void modificarMateria(Materia *m, const char *nuevoNombre);
-void mostrarMateria(const Materia *m);
-void liberarMateria(Materia *m);
+// Estructura Sistema
+typedef struct
+{
+    Materia *materias;    // Arreglo dinámico de materias
+    int cantidadMaterias; // Cantidad de materias registradas
+} Sistema;
 
-#endif
+// =======================================================
+// Prototipos de funciones de materias
+// =======================================================
+
+// Alta, baja y modificación
+void altaMateria(Sistema *sistema);
+void bajaMateria(Sistema *sistema);
+void modificarMateriaSistema(Sistema *sistema);
+void listarMaterias(Sistema *sistema);
+
+// Funciones dummy
+void inscribirEnMateria(Sistema *sistema);
+void rendirMateria(Sistema *sistema);
+void verNotasEstudiante(Sistema *sistema);
+
+#endif // MATERIAS_H

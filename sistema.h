@@ -1,38 +1,70 @@
 #ifndef SISTEMA_H
 #define SISTEMA_H
 
-#include "estudiante.h"
-#include "materia.h"
+#include <stdio.h>
+#include <stdlib.h>
 
-typedef struct {
-    Estudiante **estudiantes;
-    int cantEstudiantes;
-    int capEstudiantes;
+// =======================================================
+// Estructuras
+// =======================================================
+typedef struct
+{
+    int id;
+    char nombre[50];
+    char apellido[50];
+    int edad;
+} Estudiante;
 
-    Materia **materias;
-    int cantMaterias;
-    int capMaterias;
+typedef struct
+{
+    int id;
+    char nombre[50];
+} Materia;
+
+typedef struct
+{
+    Estudiante *estudiantes;
+    Materia *materias;
+    int cantidadEstudiantes;
+    int cantidadMaterias;
 } Sistema;
 
-// Funciones principales
-Sistema* crearSistema();
-void liberarSistema(Sistema *s);
+// =======================================================
+// Crear / liberar sistema
+// =======================================================
+Sistema *crearSistema();
+void liberarSistema(Sistema *sistema);
 
-// CRUD Estudiantes
-void altaEstudiante(Sistema *s);
-void bajaEstudiante(Sistema *s);
-void modificarEstudianteSistema(Sistema *s);
-void listarEstudiantes(const Sistema *s);
+// =======================================================
+// Guardar / cargar estudiantes
+// =======================================================
+void guardarEstudiantes(Sistema *sistema);
+void cargarEstudiantes(Sistema *sistema);
 
-// CRUD Materias
-void altaMateria(Sistema *s);
-void bajaMateria(Sistema *s);
-void modificarMateriaSistema(Sistema *s);
-void listarMaterias(const Sistema *s);
+// =======================================================
+// Gestión de estudiantes
+// =======================================================
+void altaEstudiante(Sistema *sistema);
+void bajaEstudiante(Sistema *sistema);
+void modificarEstudianteSistema(Sistema *sistema);
+void listarEstudiantes(Sistema *sistema);
 
-// Relaciones
-void inscribirEnMateria(Sistema *s);
-void rendirMateria(Sistema *s);
-void verNotasEstudiante(Sistema *s);
+// =======================================================
+// Búsquedas y filtros
+// =======================================================
+void buscarEstudiantePorNombre(Sistema *sistema);
+void buscarEstudiantePorApellido(Sistema *sistema);
+void listarEstudiantesPorRangoEdad(Sistema *sistema);
 
-#endif
+// =======================================================
+// Materias (sin implementar aún)
+// =======================================================
+void altaMateria(Sistema *sistema);
+void bajaMateria(Sistema *sistema);
+void modificarMateriaSistema(Sistema *sistema);
+void listarMaterias(Sistema *sistema);
+void inscribirEnMateria(Sistema *sistema);
+void rendirMateria(Sistema *sistema);
+void verNotasEstudiante(Sistema *sistema);
+
+#endif // SISTEMA_H
